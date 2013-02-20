@@ -1,0 +1,5 @@
+March 1st - Have ability to send songlist from server to client over a completion routine implemented
+March 11th - Basic song streaming through UDP and file upload / download through TCP
+March 18th - Design documentation completed
+
+April 3rd - Assignment finished
