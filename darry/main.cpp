@@ -59,33 +59,7 @@ DWORD WINAPI WorkerThread(LPVOID lpParameter);
 
 SOCKET AcceptSocket;
 
-string list_files (void)
-{
-	WIN32_FIND_DATA file;
-	HANDLE h;
 
-	string files;
-	
-	h = FindFirstFile("./*.*", &file); 
-	files += file.cFileName;
-	files += "\n";
-
-	printf("File: %s\n", file.cFileName);
-
-		while (FindNextFile(h, &file)) {
-
-			/*
-			TODO: If the function fails because no more matching files can be found, the GetLastError function returns ERROR_NO_MORE_FILES.
-			*/
-
-			files += "\n";
-			printf("File: %s\n", file.cFileName);
-			files += file.cFileName;
-			
-		}
-
-		return files;
-}
 
 
 void main(void)

@@ -36,6 +36,7 @@ typedef struct {
 	CHAR Buffer_request[REQUEST_DATA_BUFSIZE];
 } SOCK_RECV_INFO, *LPSOCK_RECV_INFO;
 
+std::string list_files (void);
 
 void CALLBACK Recv_Request_Routine(DWORD Error, DWORD BytesTransferred, LPWSAOVERLAPPED Overlapped, DWORD InFlags);
 

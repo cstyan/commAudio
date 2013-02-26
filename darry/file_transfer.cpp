@@ -4,16 +4,110 @@
 #define FILE_READ_SIZE 1024
 
 typedef struct {
+	bool Success;
+	DWORD Error;
+	DWORD FileSize;
+} F_TRANSFER_HEADER;
+
+typedef struct {
 	OVERLAPPED overlapped;
 	SOCKET socket;
 	HANDLE hFile;
-	DWORD dwFileSize;
+	F_TRANSFER_HEADER header;
 	WSABUF wsaBuffer; 
 	CHAR buffer[FILE_READ_SIZE];
 	DWORD BytesSent;
 	DWORD BytesInBuffer;
 } SOCK_FILE_TR_INFO, *LPSOCK_FILE_TR_INFO;
 
+typedef struct {
+	OVERLAPPED overlapped;
+	SOCKET socket;
+	WSABUF wsaBuffer;
+	std::string files_names;
+} SOCK_FILE_LIST_INFO, *LPSOCK_FILE_LIST_INFO;
+
+std::string list_files (void)
+{
+	WIN32_FIND_DATA file;
+	HANDLE h;
+
+	std::string files;
+	
+	h = FindFirstFile("./*.*", &file); 
+	files += file.cFileName;
+	files += "\n";
+
+		while (FindNextFile(h, &file)) {
+
+			/*
+			TODO: If the function fails because no more matching files can be found, the GetLastError function returns ERROR_NO_MORE_FILES.
+			*/
+
+			if (strcmp(file.cFileName, ".") != 0 && strcmp(file.cFileName, "..") != 0) {
+				files += "\n";
+				printf("File: %s\n", file.cFileName);
+				files += file.cFileName;
+			}
+			
+		}
+
+		return files;
+}
+
+void CALLBACK FileList_Routine(DWORD Error, DWORD BytesTransferred, LPWSAOVERLAPPED Overlapped, DWORD InFlags) {
+
+	DWORD NumSent;
+	DWORD Flags = 0;
+	LPSOCK_FILE_LIST_INFO info = (LPSOCK_FILE_LIST_INFO) Overlapped;
+	
+	info->wsaBuffer.buf += BytesTransferred;
+	info->wsaBuffer.len -= BytesTransferred;
+
+	if (Error != 0 || BytesTransferred == 0) {
+		closesocket(info->socket);
+		GlobalFree(info);
+		return;
+	}
+	
+	int result = WSASend(info->socket, &info->wsaBuffer, 1, &NumSent, Flags, &info->overlapped, FileList_Routine); 
+	if (result == SOCKET_ERROR) 
+	{
+		if ( (result = WSAGetLastError()) != WSA_IO_PENDING ) 
+		{
+			//MessageBox(0, "Error with WSASend", "Error", MB_OK);
+			printf("Error WSASend Error: %d\n", result);
+		}
+	}
+}
+
+void r_listing(LPSOCK_RECV_INFO si) {
+
+	LPSOCK_FILE_LIST_INFO SocketInfo; 
+	DWORD NumSent, Flags = 0;
+
+	if ((SocketInfo = (LPSOCK_FILE_LIST_INFO) GlobalAlloc(GPTR,
+         sizeof(SOCK_FILE_LIST_INFO))) == NULL) {
+        printf("GlobalAlloc() failed with error %d\n", GetLastError());
+        return;
+    }
+
+	SocketInfo->overlapped = si->overlapped;
+	SocketInfo->socket = si->Socket;
+	SocketInfo->files_names = list_files();
+	SocketInfo->wsaBuffer.buf = (CHAR *) SocketInfo->files_names.c_str();
+	SocketInfo->wsaBuffer.len = SocketInfo->files_names.size() + 1;
+
+	int result = WSASend(SocketInfo->socket, &SocketInfo->wsaBuffer, 1, &NumSent, Flags, &SocketInfo->overlapped, FileList_Routine); 
+	if (result == SOCKET_ERROR) 
+	{
+		if ( (result = WSAGetLastError()) != WSA_IO_PENDING ) 
+		{
+			//MessageBox(0, "Error with WSASend", "Error", MB_OK);
+			printf("Error WSASend Error: %d\n", result);
+		}
+	}
+}
 
 /*---------------------------------------------
 
@@ -26,9 +120,10 @@ typedef struct {
  
  Helper function for r_get and FileTransfer_Routine
 
+
 */
 
-void fillBuffer(LPSOCK_FILE_TR_INFO	info, bool putFileSize = false) 
+void fillBuffer(LPSOCK_FILE_TR_INFO	info, bool writeHeader = false) 
 {
 	DWORD amountRead;
 
@@ -36,26 +131,19 @@ void fillBuffer(LPSOCK_FILE_TR_INFO	info, bool putFileSize = false)
 	info->wsaBuffer.buf = info->buffer;
 	info->wsaBuffer.len = FILE_READ_SIZE;
 
-	// This part is a bit convoluted, I know.. I can clean it up
-	if (putFileSize)
+	if (writeHeader)
 	{
-		size_t file_size = (size_t) info->dwFileSize;
-		memcpy(info->buffer, &file_size, sizeof(size_t));
-		info->wsaBuffer.buf += sizeof(size_t);
-		info->wsaBuffer.len -= sizeof(size_t);
+		memcpy(info->buffer, &info->header, sizeof(F_TRANSFER_HEADER));
+		info->BytesInBuffer = sizeof(F_TRANSFER_HEADER);
+		info->wsaBuffer.len = sizeof(F_TRANSFER_HEADER);
 	}
 
-	ReadFile(info->hFile, info->wsaBuffer.buf, info->wsaBuffer.len, &(info->BytesInBuffer), NULL);
-	info->wsaBuffer.len = info->BytesInBuffer;
-
-	if (putFileSize)
+	else if (info->header.Success)
 	{
-		// Move buffer back so it includes the filesize
-		info->wsaBuffer.buf -= sizeof(size_t);
-		info->wsaBuffer.len += sizeof(size_t);
+		ReadFile(info->hFile, info->wsaBuffer.buf, info->wsaBuffer.len, &(info->BytesInBuffer), NULL);
+		info->wsaBuffer.len = info->BytesInBuffer;
 	}
 }
-
 
 void CALLBACK FileTransfer_Routine(DWORD Error, DWORD BytesTransferred, LPWSAOVERLAPPED Overlapped, DWORD InFlags)
 {
@@ -69,10 +157,14 @@ void CALLBACK FileTransfer_Routine(DWORD Error, DWORD BytesTransferred, LPWSAOVE
 	info->wsaBuffer.len -= BytesTransferred;
 	info->BytesInBuffer -= BytesTransferred;
 
-	if (info->BytesSent == info->dwFileSize) 
+	// Check if file transfer is complete.
+	if (info->BytesSent == info->header.FileSize + sizeof(F_TRANSFER_HEADER)) 
 	{
 		closesocket(info->socket);
-		CloseHandle(info->hFile);
+		
+		if (info->header.Success)
+			CloseHandle(info->hFile);
+		
 		GlobalFree(info);
 		return;
 	}
@@ -80,7 +172,6 @@ void CALLBACK FileTransfer_Routine(DWORD Error, DWORD BytesTransferred, LPWSAOVE
 	if (info->BytesInBuffer == 0)
 		fillBuffer(info);
 
-	//ZeroMemory(&(info->overlapped), sizeof(WSAOVERLAPPED));
 	int result = WSASend(info->socket, &(info->wsaBuffer), 1, &bytesSent, Flags, Overlapped, FileTransfer_Routine);
 
 	if (result == SOCKET_ERROR) 
@@ -91,21 +182,27 @@ void CALLBACK FileTransfer_Routine(DWORD Error, DWORD BytesTransferred, LPWSAOVE
 			printf("Error WSASend Error: %d\n", result);
 		}
 	}
-
-	
-
 }
 
+/*
 
-void r_get(LPSOCK_RECV_INFO si, LPWSABUF request_data)
+*/
+bool find_ch (LPWSABUF request_data, int ch)  {
+
+	for (size_t i=0; i < request_data->len; i++)
+		if (request_data->buf[i] == ch)
+			return true;
+
+	return false;
+}
+
+void r_get(LPSOCK_RECV_INFO si)
 {
 	
-
 	LPSOCK_FILE_TR_INFO SocketInfo; 
 
 	if ((SocketInfo = (LPSOCK_FILE_TR_INFO) GlobalAlloc(GPTR,
-         sizeof(SOCK_FILE_TR_INFO))) == NULL)
-    {
+         sizeof(SOCK_FILE_TR_INFO))) == NULL) {
         printf("GlobalAlloc() failed with error %d\n", GetLastError());
         return;
     }
@@ -115,32 +212,39 @@ void r_get(LPSOCK_RECV_INFO si, LPWSABUF request_data)
 	SocketInfo->wsaBuffer.buf = SocketInfo->buffer;
 	SocketInfo->wsaBuffer.len = FILE_READ_SIZE;
 	
-	SocketInfo->hFile = CreateFile(request_data->buf,
-						GENERIC_READ,
-                        0,
-                        (LPSECURITY_ATTRIBUTES) NULL,
-                        OPEN_EXISTING,
-                        FILE_ATTRIBUTE_NORMAL,
-                        (HANDLE) NULL);
-	
-	// TODO: Error check... hFile
+	// For security reasons, only allow clients to access files in the current directory.
+	if ( find_ch(&si->request_data, '\\') ) {
 
-	SocketInfo->dwFileSize = GetFileSize(SocketInfo->hFile, NULL);
+		// Simulate a CreateFile() error.
+		SocketInfo->hFile = INVALID_HANDLE_VALUE;
+		SetLastError(ERROR_ACCESS_DENIED);
+	}
+	else {
+		SocketInfo->hFile = CreateFile(si->request_data.buf,
+							GENERIC_READ,
+							FILE_SHARE_READ,
+							(LPSECURITY_ATTRIBUTES) NULL,
+							OPEN_EXISTING,
+							FILE_ATTRIBUTE_NORMAL,
+							(HANDLE) NULL);
+	}
+
+	SocketInfo->header.Success = SocketInfo->hFile != INVALID_HANDLE_VALUE ? true : false;
+	SocketInfo->header.Error =  SocketInfo->header.Success ? 0 : GetLastError();
+	SocketInfo->header.FileSize = SocketInfo->header.Success ? GetFileSize(SocketInfo->hFile, NULL) : 0;
+
 	SocketInfo->BytesInBuffer = 0;
 	SocketInfo->BytesSent = 0;
 
 	DWORD Flags = 0;
 	DWORD Sent = 0;
 
-	fillBuffer(SocketInfo, false); //change to true later
+	fillBuffer(SocketInfo, true); 
 	FileTransfer_Routine(0, 0, &(SocketInfo->overlapped), Flags);
 
 }
 
-void r_listing(LPSOCK_RECV_INFO si, LPWSABUF request_data)
-{
-	MessageBox(0, "Listing Request", "listing Request", MB_OK);
-}
+
 
 /*---------------------------------------------
 
@@ -153,24 +257,17 @@ void run_request(LPSOCK_RECV_INFO si, Request_Msg *request) {
 	switch (request->command) 
 	{
 	case GET:
-		r_get(si, &request->request_data);
+		r_get(si);
 		break;
 
 	case LISTING:
-		r_listing(si, &request->request_data);
+		r_listing(si);
 		break;
 
 	default:
 		// error
 		break;
 	}
-
-
-	// For now close socket here..
-	// Free si
-
-	//closesocket(si->Socket);
-	//GlobalFree(si);
 
 }
 
@@ -221,7 +318,6 @@ void helper_copy_buffer(LPSOCK_RECV_INFO info, DWORD BytesTransferred)
 		return;
 	}
 
-	// Now I realize we don't need two buffers..
 	memcpy((info->request_data.buf) + info->bytes_received, (info->wsarecv_buffer.buf), BytesTransferred);
 	info->bytes_received += BytesTransferred;
 }
@@ -274,7 +370,7 @@ Request_Msg Get_Request_Message(LPSOCK_RECV_INFO info)
 
 		// Move the buffer past the header
 		msg.request_data.buf += sizeof_header;
-		msg.request_data.len -= sizeof_header;
+		msg.request_data.len -= msg.length;
 	}
 
 	return msg;
@@ -300,6 +396,10 @@ void CALLBACK Recv_Request_Routine(DWORD Error, DWORD BytesTransferred, LPWSAOVE
 		Request_Msg msg;
 
 		msg = Get_Request_Message(info);
+
+		info->request_data.buf = msg.request_data.buf; 
+		info->request_data.len = msg.length;
+
 		run_request(info, &msg);
 	}
 	else 
