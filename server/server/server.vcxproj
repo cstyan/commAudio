@@ -74,13 +74,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="CommGui.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="AddConsole.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AddConsole.h" />
-    <ClInclude Include="Config.h" />
+    <ClInclude Include="CommGui.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="server.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

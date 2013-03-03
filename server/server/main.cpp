@@ -3,8 +3,8 @@
  *	PURPOSE: GUI and message handler for the server program
  *	APPLICATION: COMP4985 Comm Audio Server Application
  *	CREATION DATE: February-27-2013
- *	DESIGNER: Albert Liao
- *	PROGRAMMER: Albert Liao
+ *	DESIGNER: Albert Liao, Callum Styan, Darry Danzig, Steve Lo
+ *	PROGRAMMER: Albert Liao, Callum Styan, Darry Danzig, Steve Lo
  *
  *	REVISION HISTORY:
  *		February-27-2013 - Initial Draft.
@@ -18,19 +18,27 @@
  */
 #include <windows.h>
 #include <iostream>
-#include "Config.h"
+#include "resource.h"
+#include "CommGui.h"
 #include "AddConsole.h"
+
+#define CONSOLE_ENABLED 1 // Used to enable or disable the extra console window. 1 - Enabled, 0 - Disabled
 
 LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM); // The WinProc to handle all messages.
 
 int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdParam, int nCmdShow)
 {
+	/* Variables */
 	HWND hwnd;
-	HWND hListBox;
 	MSG Msg;
 	WNDCLASSEX Wcl;
-	Config config = new Config();
 	
+	// Various Window Text
+	TCHAR* tstrClassName = TEXT("COMP4985_commaudio_server"); // Used as the class name for the program.
+	TCHAR* tstrWindowTitle = TEXT("Comm Audio Server"); // Used as the title for the main window.
+	// Classes
+	CommGui* commGui = new CommGui(); // Used to store layout and interface with GUI.
+
 	// Define a Window class.
 	Wcl.cbSize = sizeof (WNDCLASSEX);
 	Wcl.style = 0; // Use default style.
@@ -39,11 +47,11 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 	Wcl.hCursor = LoadCursor(NULL, IDC_ARROW);  // Cursor style.
 	Wcl.lpfnWndProc = WndProc; // Window function.
 	Wcl.hInstance = hInst; // Handle to this instance.
-	Wcl.hbrBackground = CreateSolidBrush(bgColor); // 
+	Wcl.hbrBackground = CreateSolidBrush(commGui->layout.bgColor); // Background color for window.
 	Wcl.lpszClassName = tstrClassName; // Window class name.
-	Wcl.lpszMenuName = NULL; // No class menu.
+	Wcl.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1); // No class menu.
 	Wcl.cbClsExtra = 0; // No extra memory needed.
-	Wcl.cbWndExtra = 0; 
+	Wcl.cbWndExtra = sizeof(CommGui); 
 	
 	// Register the class.
 	if (!RegisterClassEx (&Wcl))
@@ -56,8 +64,8 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 		WS_OVERLAPPEDWINDOW, // Window style - normal.
 		CW_USEDEFAULT,	// X coordinate.
 		CW_USEDEFAULT, // Y coordinate.
-		windowWidth, // Width of window.
-		windowHeight, // Height of window.
+		commGui->layout.windowWidth, // Width of window.
+		commGui->layout.windowHeight, // Height of window.
 		NULL, // No parent window.
 		NULL, // No menu.
 		hInst, // Handle to the instance.
@@ -67,22 +75,6 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 	// Display the window.
 	ShowWindow (hwnd, nCmdShow);
 	UpdateWindow (hwnd);
-
-	// Add a ListBox.
-    hListBox = CreateWindowEx(
-		WS_EX_CLIENTEDGE,
-        TEXT("LISTBOX"),
-		NULL,
-        WS_CHILD | WS_VISIBLE | WS_VSCROLL,
-        songListX,
-		songListY,
-		songListWidth,
-		songListHeight,
-        hwnd,
-		NULL,
-		hInst,
-		NULL
-	);
 
 	// Create the message loop.
 	while (GetMessage (&Msg, NULL, 0, 0))
@@ -96,14 +88,57 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 
 LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
+	static CommGui* commGui;
+	HWND hListBox;
+
 	switch (Message)
 	{
-		case WM_DESTROY:
-			PostQuitMessage (0);
-			break;
+	case WM_CREATE:
+#if(CONSOLE_ENABLED)
+		// Start console.
+		AddConsole::addConsole();
+#endif
+		std::cout<< "YOOOOOO";
+
+		/* Initialize all controls / child windows here. */
+		// Add the song listbox.
+		hListBox = CreateWindowEx(
+			WS_EX_CLIENTEDGE,
+			TEXT("LISTBOX"),
+			NULL,
+			WS_CHILD | WS_VISIBLE | WS_VSCROLL,
+			commGui->layout.songListX,
+			commGui->layout.songListY,
+			commGui->layout.songListWidth,
+			commGui->layout.songListHeight,
+			hwnd,
+			NULL,
+			GetModuleHandle(NULL),
+			NULL
+		);
+		/*
+		hPlayButton = CreateWindowEx(NULL, 
+			"BUTTON",
+			"OK",
+			WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
+			50,
+			220,
+			100,
+			24,
+			hWnd,
+			(HMENU)IDC_MAIN_BUTTON,
+			GetModuleHandle(NULL),
+			NULL);
+			*/
+
+		break;
+
+	case WM_DESTROY:
+		PostQuitMessage (0);
+		break;
 		
-		default: // Let Win32 process all other messages.
-			return DefWindowProc (hwnd, Message, wParam, lParam);
+	default: // Let Win32 process all other messages.
+		return DefWindowProc (hwnd, Message, wParam, lParam);
 	}
 
 	return 0;	
