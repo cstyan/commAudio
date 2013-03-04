@@ -16,7 +16,7 @@
  *	NOTES:
  *		This code creates the GUI for the server application and handles all the messages for the program.
  */
-#include <windows.h>
+#include <windows.h> 
 #include <iostream>
 #include "resource.h"
 #include "CommGui.h"
@@ -33,11 +33,12 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 	MSG Msg;
 	WNDCLASSEX Wcl;
 	
-	// Various Window Text
+	// Window Configuration Values.
+	COLORREF bgColor = RGB(100, 100, 100); // Background color.
+	int windowWidth = 500; // Dimensions of the window.
+	int windowHeight = 600;
 	TCHAR* tstrClassName = TEXT("COMP4985_commaudio_server"); // Used as the class name for the program.
 	TCHAR* tstrWindowTitle = TEXT("Comm Audio Server"); // Used as the title for the main window.
-	// Classes
-	CommGui* commGui = new CommGui(); // Used to store layout and interface with GUI.
 
 	// Define a Window class.
 	Wcl.cbSize = sizeof (WNDCLASSEX);
@@ -47,7 +48,7 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 	Wcl.hCursor = LoadCursor(NULL, IDC_ARROW);  // Cursor style.
 	Wcl.lpfnWndProc = WndProc; // Window function.
 	Wcl.hInstance = hInst; // Handle to this instance.
-	Wcl.hbrBackground = CreateSolidBrush(commGui->layout.bgColor); // Background color for window.
+	Wcl.hbrBackground = CreateSolidBrush(bgColor); // Background color for window.
 	Wcl.lpszClassName = tstrClassName; // Window class name.
 	Wcl.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1); // No class menu.
 	Wcl.cbClsExtra = 0; // No extra memory needed.
@@ -64,8 +65,8 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 		WS_OVERLAPPEDWINDOW, // Window style - normal.
 		CW_USEDEFAULT,	// X coordinate.
 		CW_USEDEFAULT, // Y coordinate.
-		commGui->layout.windowWidth, // Width of window.
-		commGui->layout.windowHeight, // Height of window.
+		windowWidth, // Width of window.
+		windowHeight, // Height of window.
 		NULL, // No parent window.
 		NULL, // No menu.
 		hInst, // Handle to the instance.
@@ -88,8 +89,17 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 
 LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-	static CommGui* commGui;
-	HWND hListBox;
+	/* Handles to the button controls. */
+	HWND hListBox; // For the song list.
+	HWND hPlayButton; // For the play button.
+	HWND hPauseButton; // For the pause button.
+	HWND hRefreshListButton; // For the song list refresh button.
+
+	/* Control layouts. */
+	static int songListX = 250;
+	static int songListY = 25;
+	static int songListWidth = 225;
+	static int songListHeight = 500;
 
 	switch (Message)
 	{
@@ -107,10 +117,10 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			TEXT("LISTBOX"),
 			NULL,
 			WS_CHILD | WS_VISIBLE | WS_VSCROLL,
-			commGui->layout.songListX,
-			commGui->layout.songListY,
-			commGui->layout.songListWidth,
-			commGui->layout.songListHeight,
+			songListX,
+			songListY,
+			songListWidth,
+			songListHeight,
 			hwnd,
 			NULL,
 			GetModuleHandle(NULL),
