@@ -148,6 +148,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 #endif
 
 		/* Initialize all controls / child windows here. */
+		// The text for the currently selected folder.
 		hFolderText = CreateWindowEx(
 			0,
 			"STATIC",
@@ -259,7 +260,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			NULL
 		);
 
-		/* Initialize all controls / child windows here. */
+		// The status text of what the application is doing.
 		hStatusText = CreateWindowEx(
 			0,
 			"STATIC",
@@ -283,11 +284,15 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		// The folder button was pressed. Let the user choose a folder and display it.
 		case IDC_CHOOSEFOLDERBUTTON:
 			// Open up a dialog for the user to choose a folder.
-			CommGui::GetFolderSelection(hwnd, folderPath, TEXT("Please select a folder."));
-			// Update the text displaying the currently selected folder.
-			SendMessage(hFolderText, WM_SETTEXT, 0, (LPARAM)folderPath);
-			// Update the listbox with all of the files available in that folder.
-			CommGui::updateSongList(hListBox, CommGui::find_files(folderPath, "*"));
+			if(CommGui::GetFolderSelection(hwnd, folderPath, TEXT("Please select a folder.")) != NULL) // If the user selects a folder.
+			{
+				// Clear the listbox.
+				SendMessage(hListBox, LB_RESETCONTENT, 0, 0);
+				// Update the text displaying the currently selected folder.
+				SendMessage(hFolderText, WM_SETTEXT, 0, (LPARAM)folderPath);
+				// Update the listbox with all of the files available in that folder.
+				CommGui::updateSongList(hListBox, CommGui::find_files(folderPath, "*"));
+			}
 			break;
 
 		// The refresh button was pressed, reload the file list for the selected folder.
