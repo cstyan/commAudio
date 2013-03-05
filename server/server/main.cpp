@@ -23,6 +23,7 @@
 #include "AddConsole.h"
 
 #define CONSOLE_ENABLED 1 // Used to enable or disable the extra console window. 1 - Enabled, 0 - Disabled
+#define MAX_PATH_LENGTH 128 // Used as the maximum path length for a directory.
 
 LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM); // The WinProc to handle all messages.
 
@@ -36,7 +37,7 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 	// Window Configuration Values.
 	COLORREF bgColor = RGB(100, 100, 100); // Background color.
 	int windowWidth = 500; // Dimensions of the window.
-	int windowHeight = 600;
+	int windowHeight = 710;
 	TCHAR* tstrClassName = TEXT("COMP4985_commaudio_server"); // Used as the class name for the program.
 	TCHAR* tstrWindowTitle = TEXT("Comm Audio Server"); // Used as the title for the main window.
 
@@ -89,17 +90,54 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 
 LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-	/* Handles to the button controls. */
-	HWND hListBox; // For the song list.
-	HWND hPlayButton; // For the play button.
-	HWND hPauseButton; // For the pause button.
-	HWND hRefreshListButton; // For the song list refresh button.
+	HDC hdc;
 
-	/* Control layouts. */
-	static int songListX = 250;
-	static int songListY = 25;
-	static int songListWidth = 225;
-	static int songListHeight = 500;
+	/* Handles to the button controls. */
+	static HWND hListBox; // For the song list.
+	static HWND hFolderText; // To display the current folder.
+	static HWND hChooseFolderButton; // To choose the folder to get songs from.
+	static HWND hRefreshListButton; // For the song list refresh button.
+	static HWND hPlayButton; // For the play button.
+	static HWND hPauseButton; // For the pause button.
+	static HWND hMicButton; // For the microphone.
+	static HWND hStatusText; // To display the application status.
+
+	/* Control layout values. */
+	static int folderTextX = 15;
+	static int folderTextY = 10;
+	static int folderTextWidth = 200;
+	static int folderTextHeight = 20;
+	static int songListX = 10;
+	static int songListY = 40;
+	static int songListWidth = 465;
+	static int songListHeight = 550;
+	static int chooseFolderButtonX = 245;
+	static int chooseFolderButtonY = 8;
+	static int chooseFolderWidth = 110;
+	static int chooseFolderHeight = 25;
+	static int refreshListButtonX = 365;
+	static int refreshListButtonY = 8;
+	static int refreshListWidth = 110;
+	static int refreshListHeight = 25;
+	static int playButtonX = 15;
+	static int playButtonY = 595;
+	static int playButtonWidth = 110;
+	static int playButtonHeight = 25;
+	static int pauseButtonX = 135;
+	static int pauseButtonY = 595;
+	static int pauseButtonWidth = 110;
+	static int pauseButtonHeight = 25;
+	static int micButtonX = 365;
+	static int micButtonY = 595;
+	static int micButtonWidth = 110;
+	static int micButtonHeight = 25;
+	static int statusTextX = 10;
+	static int statusTextY = 625;
+	static int statusTextWidth = 465;
+	static int statusTextHeight = 20;
+
+	/* Variables. */
+	static TCHAR folderPath[MAX_PATH_LENGTH]; // String that stores the path of the folder the user selects for music.
 
 	switch (Message)
 	{
@@ -108,9 +146,55 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		// Start console.
 		AddConsole::addConsole();
 #endif
-		std::cout<< "YOOOOOO";
 
 		/* Initialize all controls / child windows here. */
+		hFolderText = CreateWindowEx(
+			0,
+			"STATIC",
+			"No folder chosen.",
+			WS_CHILD | WS_VISIBLE,
+			folderTextX,
+			folderTextY,
+			folderTextWidth,
+			folderTextHeight,
+			hwnd,
+			(HMENU) IDC_FOLDERTEXT,
+			GetModuleHandle(NULL),
+			NULL
+		);
+
+		// The choose folder button.
+		hChooseFolderButton = CreateWindowEx(
+			NULL, 
+			"BUTTON",
+			"Choose Folder",
+			WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
+			chooseFolderButtonX,
+			chooseFolderButtonY,
+			chooseFolderWidth,
+			chooseFolderHeight,
+			hwnd,
+			(HMENU) IDC_CHOOSEFOLDERBUTTON,
+			GetModuleHandle(NULL),
+			NULL
+		);
+
+		// The refresh list button.
+		hRefreshListButton = CreateWindowEx(
+			NULL, 
+			"BUTTON",
+			"Refresh List",
+			WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
+			refreshListButtonX,
+			refreshListButtonY,
+			refreshListWidth,
+			refreshListHeight,
+			hwnd,
+			(HMENU) IDC_REFRESHLISTBUTTON,
+			GetModuleHandle(NULL),
+			NULL
+		);
+
 		// Add the song listbox.
 		hListBox = CreateWindowEx(
 			WS_EX_CLIENTEDGE,
@@ -122,24 +206,122 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			songListWidth,
 			songListHeight,
 			hwnd,
-			NULL,
+			(HMENU) IDC_SONGLISTBOX,
 			GetModuleHandle(NULL),
 			NULL
 		);
-		/*
-		hPlayButton = CreateWindowEx(NULL, 
+
+		// The play button.
+		hRefreshListButton = CreateWindowEx(
+			NULL, 
 			"BUTTON",
-			"OK",
+			"PLAY",
 			WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
-			50,
-			220,
-			100,
-			24,
-			hWnd,
-			(HMENU)IDC_MAIN_BUTTON,
+			playButtonX,
+			playButtonY,
+			playButtonWidth,
+			playButtonHeight,
+			hwnd,
+			(HMENU) IDC_PLAYBUTTON,
 			GetModuleHandle(NULL),
-			NULL);
-			*/
+			NULL
+		);
+
+		// The pause button.
+		hRefreshListButton = CreateWindowEx(
+			NULL, 
+			"BUTTON",
+			"PAUSE",
+			WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
+			pauseButtonX,
+			pauseButtonY,
+			pauseButtonWidth,
+			pauseButtonHeight,
+			hwnd,
+			(HMENU) IDC_PLAYBUTTON,
+			GetModuleHandle(NULL),
+			NULL
+		);
+
+		// The mic button.
+		hRefreshListButton = CreateWindowEx(
+			NULL, 
+			"BUTTON",
+			"MIC",
+			WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON,
+			micButtonX,
+			micButtonY,
+			micButtonWidth,
+			micButtonHeight,
+			hwnd,
+			(HMENU) IDC_PLAYBUTTON,
+			GetModuleHandle(NULL),
+			NULL
+		);
+
+		/* Initialize all controls / child windows here. */
+		hStatusText = CreateWindowEx(
+			0,
+			"STATIC",
+			"Not currently playing any song.",
+			WS_CHILD | WS_VISIBLE,
+			statusTextX,
+			statusTextY,
+			statusTextWidth,
+			statusTextHeight,
+			hwnd,
+			(HMENU) IDC_STATUSTEXT,
+			GetModuleHandle(NULL),
+			NULL
+		);
+
+		break;
+
+	case WM_COMMAND:
+		switch(LOWORD(wParam))
+		{
+		// The folder button was pressed. Let the user choose a folder and display it.
+		case IDC_CHOOSEFOLDERBUTTON:
+			// Open up a dialog for the user to choose a folder.
+			CommGui::GetFolderSelection(hwnd, folderPath, TEXT("Please select a folder."));
+			// Update the text displaying the currently selected folder.
+			SendMessage(hFolderText, WM_SETTEXT, 0, (LPARAM)folderPath);
+			// Update the listbox with all of the files available in that folder.
+			CommGui::updateSongList(hListBox, CommGui::find_files(folderPath, "*"));
+			break;
+
+		// The refresh button was pressed, reload the file list for the selected folder.
+		case IDC_REFRESHLISTBUTTON:
+			// Clear the listbox.
+			SendMessage(hListBox, LB_RESETCONTENT, 0, 0);
+			// Update the listbox with all the files in the folder originally selected.
+			CommGui::updateSongList(hListBox, CommGui::find_files(folderPath, "*"));
+			break;
+
+		// The play button was pressed.
+		case IDC_PLAYBUTTON:
+			break;
+
+		// The pause button was pressed.
+		case IDC_PAUSEBUTTON:
+			break;
+
+		// The mic button was pressed.
+		case IDC_MICBUTTON:
+			break;
+
+		/* Menu Stuff */
+		case ID_TOOLS_SETTINGS:
+			break;
+
+		case ID_HELP_ABOUT:
+			MessageBox(hwnd, TEXT("Made by Albert, Callum, Darry, Steve. (C)2013"), TEXT("About"), NULL);
+			break;
+
+		case ID_FILE_EXIT:
+			PostQuitMessage (0);
+			break;
+		}
 
 		break;
 
