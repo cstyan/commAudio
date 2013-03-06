@@ -148,6 +148,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 #endif
 
 		/* Initialize all controls / child windows here. */
+		// The text for the currently selected folder.
 		hFolderText = CreateWindowEx(
 			0,
 			"STATIC",
@@ -238,7 +239,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			pauseButtonWidth,
 			pauseButtonHeight,
 			hwnd,
-			(HMENU) IDC_PLAYBUTTON,
+			(HMENU) IDC_PAUSEBUTTON,
 			GetModuleHandle(NULL),
 			NULL
 		);
@@ -254,12 +255,12 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			micButtonWidth,
 			micButtonHeight,
 			hwnd,
-			(HMENU) IDC_PLAYBUTTON,
+			(HMENU) IDC_MICBUTTON,
 			GetModuleHandle(NULL),
 			NULL
 		);
 
-		/* Initialize all controls / child windows here. */
+		// The status text of what the application is doing.
 		hStatusText = CreateWindowEx(
 			0,
 			"STATIC",
@@ -283,11 +284,21 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		// The folder button was pressed. Let the user choose a folder and display it.
 		case IDC_CHOOSEFOLDERBUTTON:
 			// Open up a dialog for the user to choose a folder.
-			CommGui::GetFolderSelection(hwnd, folderPath, TEXT("Please select a folder."));
-			// Update the text displaying the currently selected folder.
-			SendMessage(hFolderText, WM_SETTEXT, 0, (LPARAM)folderPath);
-			// Update the listbox with all of the files available in that folder.
-			CommGui::updateSongList(hListBox, CommGui::find_files(folderPath, "*"));
+			cout << "User is selecting a new folder." << endl;
+			if(CommGui::GetFolderSelection(hwnd, folderPath, TEXT("Please select a folder.")) != NULL) // If the user selects a folder.
+			{
+				// Clear the listbox.
+				SendMessage(hListBox, LB_RESETCONTENT, 0, 0);
+				// Update the text displaying the currently selected folder.
+				SendMessage(hFolderText, WM_SETTEXT, 0, (LPARAM)folderPath);
+				cout << "Folder \"" << folderPath << "\" selected." << endl;
+				// Update the listbox with all of the files available in that folder.
+				CommGui::updateSongList(hListBox, CommGui::find_files(folderPath, "*"));
+			}
+			else
+			{
+				cout << "No folder selected." << endl;
+			}
 			break;
 
 		// The refresh button was pressed, reload the file list for the selected folder.
@@ -296,14 +307,17 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			SendMessage(hListBox, LB_RESETCONTENT, 0, 0);
 			// Update the listbox with all the files in the folder originally selected.
 			CommGui::updateSongList(hListBox, CommGui::find_files(folderPath, "*"));
+			cout << "Refreshing file list from folder \"" << folderPath << "\"." << endl;
 			break;
 
 		// The play button was pressed.
 		case IDC_PLAYBUTTON:
+			cout << "Now playing." << endl;
 			break;
 
 		// The pause button was pressed.
 		case IDC_PAUSEBUTTON:
+			cout << "Pausing." << endl;
 			break;
 
 		// The mic button was pressed.

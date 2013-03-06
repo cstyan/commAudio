@@ -91,7 +91,7 @@ public:
 	 *		This function opens up a dialog box for the user to select a folder from and then the path is
 	 *		saved to the string szBuf.
 	 */
-	static void CommGui::GetFolderSelection(HWND hwnd, LPTSTR szBuf, LPCTSTR szTitle);
+	static LPITEMIDLIST CommGui::GetFolderSelection(HWND hwnd, LPTSTR szBuf, LPCTSTR szTitle);
 };
 
 #endif

@@ -113,7 +113,7 @@ vector<string> CommGui::find_files(string directory, string fileExtension)
  *		This function opens up a dialog box for the user to select a folder from and then the path is
  *		saved to the string szBuf.
  */
-void CommGui::GetFolderSelection(HWND hwnd, LPTSTR szBuf, LPCTSTR szTitle)
+LPITEMIDLIST CommGui::GetFolderSelection(HWND hwnd, LPTSTR szBuf, LPCTSTR szTitle)
 {
 	LPITEMIDLIST pidl     = NULL;
 	BROWSEINFO   bi       = {0};
@@ -129,4 +129,6 @@ void CommGui::GetFolderSelection(HWND hwnd, LPTSTR szBuf, LPCTSTR szTitle)
 		SHGetPathFromIDList(pidl, szBuf);
 		CoTaskMemFree(pidl);
 	}
+
+	return pidl;
 }
