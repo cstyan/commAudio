@@ -1,0 +1,5 @@
+A file server can spawn new threads to handle each file to be managed. 
+Once handled each thread must be terminated. The data must be shared 
+across threads which is easy for threads in the same process. If the 
+system supports multiple processors then the threads can be spread 
+across processors for faster service. 

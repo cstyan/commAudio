@@ -66,8 +66,8 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT wMessage,
 					260, 250, 100, 40,
 					hWnd, (HMENU)PAUSE_BUTTON, hInstance, NULL) ;
 
-			hSongDisplay = CreateWindow(TEXT("LISTBOX"), TEXT(""),
-					WS_VISIBLE | WS_CHILD | WS_BORDER,
+			hSongDisplay = CreateWindow(TEXT("LISTBOX"), TEXT("Song List"),
+					WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL | WS_CAPTION,
 					30, 30, 425, 200,
 					hWnd, (HMENU)SONG_DISPLAY, hInstance, NULL);
 			SendMessage(hSongDisplay, EM_SETREADONLY, TRUE, NULL);
@@ -76,6 +76,8 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT wMessage,
             ShowWindow (hPlayBtn, SW_SHOWNORMAL) ;
             ShowWindow (hPauseBtn, SW_SHOWNORMAL) ;
             ShowWindow (hSongDisplay, SW_SHOWNORMAL) ;
+			
+			SendMessage(hSongDisplay, LB_ADDSTRING, 0, (LPARAM(TEXT("hi"))));
             break ;
 
         case WM_COMMAND:
@@ -86,7 +88,11 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT wMessage,
                     break ; 
 
 				case PAUSE_BUTTON:
+					SendMessage(hSongDisplay, LB_ADDSTRING, 0, (LPARAM(TEXT("bye"))));
 					break ;
+
+				case ID_MIC:
+					break;
 
 				case ID_FILE_EXIT:
                     DestroyWindow (hWnd) ;  /* destroy window */
