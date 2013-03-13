@@ -78,6 +78,10 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT wMessage,
             ShowWindow (hSongDisplay, SW_SHOWNORMAL) ;
 			
 			SendMessage(hSongDisplay, LB_ADDSTRING, 0, (LPARAM(TEXT("hi"))));
+			//connect to the server
+			//retrieve the playlist from the server
+			//load that playlist into an arraylist of strings?
+			//loadPlayList(hSongDisplay, ...);
             break ;
 
         case WM_COMMAND:
@@ -109,4 +113,3 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT wMessage,
     }
     return (0) ;
 }
-
