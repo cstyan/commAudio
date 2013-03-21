@@ -441,15 +441,13 @@ void CALLBACK Recv_Request_Routine(DWORD Error, DWORD BytesTransferred, LPWSAOVE
 
 DWORD WINAPI FileTransferThread(LPVOID lpParameter)
 {
-  
+   
    SOCKET ListenSocket;
    SOCKADDR_IN InternetAddr;
    INT Ret;
    HANDLE ThreadHandle;
    DWORD ThreadId;
    WSAEVENT AcceptEvent;
-
-   list_files();
 
    if ((ListenSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, 
       WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) 

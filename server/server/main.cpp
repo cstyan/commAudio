@@ -17,6 +17,7 @@
  *		This code creates the GUI for the server application and handles all the messages for the program.
  */
 #include "file_transfer.h"
+#include "FileList.h"
 #include <windows.h> 
 #include <iostream>
 #include "resource.h"
