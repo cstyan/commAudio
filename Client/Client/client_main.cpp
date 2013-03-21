@@ -2,7 +2,10 @@
 #include <string>
 
 #include "client.h"
+#include "AddConsole.h"
 #include "resource.h"
+
+#define CONSOLE_ENABLED 1 // Used to enable or disable the extra console window. 1 - Enabled, 0 - Disabled
 
 int PASCAL WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, 
                        LPSTR lpszCmdLine, int nCmdShow)
@@ -53,7 +56,12 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT wMessage,
     {
         case WM_CREATE:     /* program is just starting */
 			/* get the instance handle */
-            hInstance = (HINSTANCE)GetWindowLong (hWnd, GWL_HINSTANCE) ; 
+            #if(CONSOLE_ENABLED)
+				// Start console.
+				AddConsole::addConsole();
+			#endif
+			printf("hi");
+			hInstance = (HINSTANCE)GetWindowLong (hWnd, GWL_HINSTANCE) ; 
 
 			/* create button controls */
             hPlayBtn = CreateWindow (TEXT("BUTTON"), TEXT("Play"),

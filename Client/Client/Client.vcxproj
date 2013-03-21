@@ -74,9 +74,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AddConsole.cpp" />
     <ClCompile Include="client_main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AddConsole.h" />
     <ClInclude Include="client.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
