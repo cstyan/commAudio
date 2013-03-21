@@ -16,6 +16,7 @@
  *	NOTES:
  *		This code creates the GUI for the server application and handles all the messages for the program.
  */
+#include "file_transfer.h"
 #include <windows.h> 
 #include <iostream>
 #include "resource.h"
@@ -34,6 +35,16 @@ int WINAPI WinMain (HINSTANCE hInst, HINSTANCE hprevInstance, LPSTR lspszCmdPara
 	MSG Msg;
 	WNDCLASSEX Wcl;
 	
+	int returnValue;
+	WSADATA wsaData;
+   
+	if ((returnValue = WSAStartup(0x0202,&wsaData)) != 0)
+	{
+		cout << "WSAStartup failed with error " << returnValue << endl;
+		WSACleanup();
+		return 1;
+	}
+
 	// Window Configuration Values.
 	COLORREF bgColor = RGB(100, 100, 100); // Background color.
 	int windowWidth = 500; // Dimensions of the window.
@@ -139,6 +150,9 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 	/* Variables. */
 	static TCHAR folderPath[MAX_PATH_LENGTH]; // String that stores the path of the folder the user selects for music.
 
+	static HANDLE hFileTransferThread;
+	static DWORD dwFileTransferThreadId;
+
 	switch (Message)
 	{
 	case WM_CREATE:
@@ -146,6 +160,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		// Start console.
 		AddConsole::addConsole();
 #endif
+
+		hFileTransferThread = CreateThread(NULL, 0, FileTransferThread, NULL, 0, &dwFileTransferThreadId);
 
 		/* Initialize all controls / child windows here. */
 		// The text for the currently selected folder.
@@ -340,6 +356,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_DESTROY:
+		WSACleanup();
 		PostQuitMessage (0);
 		break;
 		

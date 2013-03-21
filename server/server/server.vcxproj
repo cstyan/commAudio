@@ -76,13 +76,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CommGui.cpp" />
+    <ClCompile Include="file_transfer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="AddConsole.cpp" />
+    <ClCompile Include="wrappers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AddConsole.h" />
     <ClInclude Include="CommGui.h" />
+    <ClInclude Include="file_transfer.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="wrappers.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="server.rc" />
